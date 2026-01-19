@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controller for Bose SoundTouch</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            color: #e0e0e0;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .discovery-section h3 {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .discovery-btn {
+            width: 100%;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            background: #2196F3;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .discovery-btn:hover {
+            background: #1976D2;
+        }
+
+        .discovery-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        .discovery-btn .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .discovery-btn.loading .spinner {
+            display: inline-block;
+        }
+
+        .discovery-btn.loading .btn-text {
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .devices-list {
+            margin-top: 16px;
+        }
+
+        .device-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .device-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .device-item.selected {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.2);
+        }
+
+        .device-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-right: 14px;
+        }
+
+        .device-details {
+            flex: 1;
+        }
+
+        .device-item-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .device-item-info {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .no-devices {
+            text-align: center;
+            padding: 20px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff5252;
+        }
+
+        .status-dot.connected {
+            background: #4CAF50;
+        }
+
+        .device-info {
+            display: none;
+        }
+
+        .device-info.visible {
+            display: block;
+        }
+
+        .device-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .device-type {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+
+        .now-playing {
+            text-align: center;
+        }
+
+        .album-art {
+            width: 200px;
+            height: 200px;
+            border-radius: 12px;
+            margin: 0 auto 16px;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .album-art img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .album-art .placeholder {
+            font-size: 48px;
+            opacity: 0.3;
+        }
+
+        .track-info {
+            margin-bottom: 16px;
+        }
+
+        .track-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .artist-name {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.95rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .source-name {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+
+        .play-status {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-top: 8px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .control-btn {
+            width: 56px;
+            height: 56px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.05);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .control-btn.play-pause {
+            width: 72px;
+            height: 72px;
+            background: #4CAF50;
+            font-size: 24px;
+        }
+
+        .control-btn.play-pause:hover {
+            background: #45a049;
+        }
+
+        .volume-section {
+            margin-top: 20px;
+        }
+
+        .volume-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .volume-label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .volume-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .volume-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .volume-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            border: none;
+        }
+
+        .volume-controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .volume-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .volume-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .volume-btn.muted {
+            background: #ff5252;
+        }
+
+        .presets-section h3,
+        .sources-section h3 {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .presets-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .preset-btn {
+            padding: 16px 8px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .preset-btn:active {
+            transform: translateY(0);
+        }
+
+        .preset-btn.empty {
+            opacity: 0.4;
+            cursor: default;
+        }
+
+        .preset-btn.empty:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: none;
+        }
+
+        .preset-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .preset-name {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.7);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sources-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .source-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .source-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .source-btn.active {
+            background: #4CAF50;
+        }
+
+        .source-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .power-section {
+            display: flex;
+            justify-content: center;
+            margin-top: 8px;
+        }
+
+        .power-btn {
+            padding: 12px 32px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 82, 82, 0.8);
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .power-btn:hover {
+            background: #ff5252;
+        }
+
+        /* Zone styles */
+        .zone-section h3 {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .zone-status {
+            margin-bottom: 16px;
+        }
+
+        .zone-info {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .zone-empty {
+            color: rgba(255, 255, 255, 0.5);
+            text-align: center;
+            padding: 8px;
+        }
+
+        .zone-master {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #4CAF50;
+        }
+
+        .zone-members {
+            font-size: 0.9rem;
+        }
+
+        .zone-member {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+
+        .zone-member-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .zone-member-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .zone-member-badge {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #4CAF50;
+        }
+
+        .zone-member-badge.slave {
+            background: #2196F3;
+        }
+
+        .zone-member-remove {
+            background: none;
+            border: none;
+            color: #ff5252;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0 4px;
+        }
+
+        .zone-member-volume {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .zone-member-volume-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            min-width: 24px;
+        }
+
+        .zone-volume-slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .zone-volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+
+        .zone-volume-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            border: none;
+        }
+
+        .zone-member-volume-value {
+            font-size: 0.85rem;
+            min-width: 28px;
+            text-align: right;
+        }
+
+        .zone-member-mute-btn {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            font-size: 0.75rem;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+
+        .zone-member-mute-btn.muted {
+            background: #ff5252;
+        }
+
+        .zone-master-volume {
+            margin-top: 16px;
+            padding: 12px;
+            background: rgba(76, 175, 80, 0.15);
+            border-radius: 8px;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .zone-master-volume-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .zone-master-volume-label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #4CAF50;
+        }
+
+        .zone-master-volume-value {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .zone-master-volume-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .zone-master-slider {
+            flex: 1;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .zone-master-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+
+        .zone-master-slider::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            border: none;
+        }
+
+        .zone-master-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            min-width: 36px;
+        }
+
+        .zone-master-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .zone-master-mute-btn {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            font-size: 0.85rem;
+            cursor: pointer;
+            margin-left: 4px;
+            white-space: nowrap;
+        }
+
+        .zone-master-mute-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .zone-master-mute-btn.muted {
+            background: #ff5252;
+        }
+
+        .zone-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .zone-btn {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            background: #2196F3;
+            color: #fff;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .zone-btn:hover {
+            background: #1976D2;
+        }
+
+        .zone-btn-danger {
+            background: rgba(255, 82, 82, 0.8);
+        }
+
+        .zone-btn-danger:hover {
+            background: #ff5252;
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal {
+            background: #1a1a2e;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal h3 {
+            margin-bottom: 8px;
+        }
+
+        .modal-description {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+        }
+
+        .zone-device-list {
+            margin-bottom: 20px;
+        }
+
+        .zone-device-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .zone-device-item:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .zone-device-item.selected {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.2);
+        }
+
+        .zone-device-item.master {
+            opacity: 0.6;
+            cursor: default;
+        }
+
+        .zone-device-item input[type="checkbox"] {
+            margin-right: 12px;
+            width: 18px;
+            height: 18px;
+        }
+
+        .zone-device-item-info {
+            flex: 1;
+        }
+
+        .zone-device-item-name {
+            font-weight: 600;
+        }
+
+        .zone-device-item-type {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .zone-device-item-master {
+            font-size: 0.75rem;
+            color: #4CAF50;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .modal-btn-cancel {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+        }
+
+        .modal-btn-cancel:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .modal-btn-confirm {
+            background: #4CAF50;
+            color: #fff;
+        }
+
+        .modal-btn-confirm:hover {
+            background: #45a049;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .error-message {
+            background: rgba(255, 82, 82, 0.2);
+            border: 1px solid #ff5252;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+            font-size: 0.9rem;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Controller for Bose SoundTouch</h1>
+
+        <!-- Discovery Card -->
+        <div class="card">
+            <div class="discovery-section">
+                <h3>Devices</h3>
+                <button class="discovery-btn" id="discoverBtn" onclick="discoverDevices()">
+                    <span class="spinner"></span>
+                    <span class="btn-text">Discover Devices</span>
+                </button>
+                <div class="devices-list" id="devicesList">
+                    <!-- Devices will be populated here -->
+                </div>
+                <div class="status-indicator">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">No device selected</span>
+                </div>
+            </div>
+            <div id="errorMessage" class="error-message hidden"></div>
+        </div>
+
+        <!-- Device Info Card -->
+        <div class="card device-info" id="deviceInfoCard">
+            <div class="device-name" id="deviceName">--</div>
+            <div class="device-type" id="deviceType">--</div>
+        </div>
+
+        <!-- Now Playing Card -->
+        <div class="card device-info" id="nowPlayingCard">
+            <div class="now-playing">
+                <div class="album-art" id="albumArt">
+                    <span class="placeholder">&#9835;</span>
+                </div>
+                <div class="track-info">
+                    <div class="track-name" id="trackName">--</div>
+                    <div class="artist-name" id="artistName">--</div>
+                    <div class="source-name" id="sourceName">--</div>
+                    <div class="play-status" id="playStatus">--</div>
+                </div>
+                <div class="controls">
+                    <button class="control-btn" onclick="sendKey('PREV_TRACK')" title="Previous">&#9198;</button>
+                    <button class="control-btn play-pause" id="playPauseBtn" onclick="sendKey('PLAY_PAUSE')" title="Play/Pause">&#9654;</button>
+                    <button class="control-btn" onclick="sendKey('NEXT_TRACK')" title="Next">&#9197;</button>
+                </div>
+                <div class="volume-section">
+                    <div class="volume-header">
+                        <span class="volume-label">Volume</span>
+                        <span class="volume-value" id="volumeValue">--</span>
+                    </div>
+                    <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50" oninput="updateVolumeDisplay(this.value)" onchange="setVolume(this.value)">
+                    <div class="volume-controls">
+                        <button class="volume-btn" onclick="sendKey('VOLUME_DOWN')">-</button>
+                        <button class="volume-btn" id="muteBtn" onclick="toggleMute()">Mute</button>
+                        <button class="volume-btn" onclick="sendKey('VOLUME_UP')">+</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Presets Card -->
+        <div class="card device-info" id="presetsCard">
+            <div class="presets-section">
+                <h3>Presets</h3>
+                <div class="presets-grid" id="presetsGrid">
+                    <!-- Presets will be populated dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Sources Card -->
+        <div class="card device-info" id="sourcesCard">
+            <div class="sources-section">
+                <h3>Sources</h3>
+                <div class="sources-list" id="sourcesList">
+                    <!-- Sources will be populated dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Zone Card -->
+        <div class="card device-info" id="zoneCard">
+            <div class="zone-section">
+                <h3>Multi-Room Zone</h3>
+                <div class="zone-status" id="zoneStatus">
+                    <div class="zone-info" id="zoneInfo">
+                        <!-- Zone info will be populated here -->
+                    </div>
+                </div>
+                <div class="zone-controls">
+                    <button class="zone-btn" id="createZoneBtn" onclick="showZoneModal()">Create Zone</button>
+                    <button class="zone-btn zone-btn-danger" id="leaveZoneBtn" onclick="leaveZone()" style="display:none;">Leave Zone</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Zone Modal -->
+        <div class="modal-overlay" id="zoneModal" style="display:none;">
+            <div class="modal">
+                <h3>Create Multi-Room Zone</h3>
+                <p class="modal-description">Select devices to add to the zone. The currently selected device will be the master.</p>
+                <div class="zone-device-list" id="zoneDeviceList">
+                    <!-- Devices will be listed here -->
+                </div>
+                <div class="modal-buttons">
+                    <button class="modal-btn modal-btn-cancel" onclick="hideZoneModal()">Cancel</button>
+                    <button class="modal-btn modal-btn-confirm" onclick="createZone()">Create Zone</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Power Card -->
+        <div class="card device-info" id="powerCard">
+            <div class="power-section">
+                <button class="power-btn" onclick="sendKey('POWER')">Power</button>
+            </div>
+        </div>
+
+        <footer>
+            Bose and SoundTouch are trademarks of Bose Corporation.
+        </footer>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let isConnected = false;
+        let selectedDeviceIp = null;
+        let currentPlayStatus = 'STOP_STATE';
+        let isMuted = false;
+        let pollInterval = null;
+        let discoveredDevices = {};
+
+        // Auto-discover on page load
+        window.onload = () => {
+            discoverDevices();
+        };
+
+        // Discover devices
+        async function discoverDevices() {
+            const btn = document.getElementById('discoverBtn');
+            btn.classList.add('loading');
+            btn.disabled = true;
+            hideError();
+
+            try {
+                const response = await fetch('/discover');
+                const devices = await response.json();
+                discoveredDevices = devices;
+                renderDevicesList(devices);
+
+                // Auto-select if only one device found
+                const deviceIps = Object.keys(devices);
+                if (deviceIps.length === 1) {
+                    selectDevice(deviceIps[0]);
+                } else if (deviceIps.length === 0) {
+                    updateStatus('No devices found', false);
+                }
+            } catch (error) {
+                showError(`Discovery failed: ${error.message}`);
+            } finally {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
+        }
+
+        // Render devices list
+        function renderDevicesList(devices) {
+            const list = document.getElementById('devicesList');
+            const deviceIps = Object.keys(devices);
+
+            if (deviceIps.length === 0) {
+                list.innerHTML = '<div class="no-devices">No devices found. Make sure your SoundTouch is powered on and connected to the network.</div>';
+                return;
+            }
+
+            list.innerHTML = deviceIps.map(ip => {
+                const device = devices[ip];
+                const isSelected = ip === selectedDeviceIp;
+                return `
+                    <div class="device-item ${isSelected ? 'selected' : ''}" onclick="selectDevice('${ip}')">
+                        <div class="device-icon">&#9835;</div>
+                        <div class="device-details">
+                            <div class="device-item-name">${device.name}</div>
+                            <div class="device-item-info">${device.type} - ${ip}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Select a device
+        async function selectDevice(ip) {
+            selectedDeviceIp = ip;
+            const device = discoveredDevices[ip];
+
+            // Update UI to show selection
+            renderDevicesList(discoveredDevices);
+            updateStatus(`Connecting to ${device.name}...`, false);
+
+            try {
+                // Tell server which device to use
+                await fetch('/set-device', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ip: ip })
+                });
+
+                isConnected = true;
+                updateStatus(`Connected to ${device.name}`, true);
+                showDeviceCards();
+
+                // Fetch all data
+                await Promise.all([
+                    fetchDeviceInfo(),
+                    fetchNowPlaying(),
+                    fetchVolume(),
+                    fetchPresets(),
+                    fetchSources(),
+                    fetchZone()
+                ]);
+
+                // Start polling for updates
+                startPolling();
+            } catch (error) {
+                updateStatus('Connection failed', false);
+                showError(`Could not connect to device: ${error.message}`);
+            }
+        }
+
+        // Start polling for updates
+        function startPolling() {
+            if (pollInterval) clearInterval(pollInterval);
+            pollInterval = setInterval(async () => {
+                if (!isConnected) return;
+                try {
+                    await Promise.all([
+                        fetchNowPlaying(),
+                        fetchVolume()
+                    ]);
+                } catch (e) {
+                    console.error('Polling error:', e);
+                }
+            }, 3000);
+        }
+
+        // Fetch device info
+        async function fetchDeviceInfo() {
+            const response = await fetch(`${API_BASE}/info`);
+            const text = await response.text();
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(text, 'text/xml');
+
+            const name = xml.querySelector('name')?.textContent || 'Unknown';
+            const type = xml.querySelector('type')?.textContent || 'Unknown';
+
+            document.getElementById('deviceName').textContent = name;
+            document.getElementById('deviceType').textContent = type;
+
+            return { name, type };
+        }
+
+        // Fetch now playing
+        async function fetchNowPlaying() {
+            const response = await fetch(`${API_BASE}/now_playing`);
+            const text = await response.text();
+            updateNowPlaying(text);
+        }
+
+        // Update now playing display
+        function updateNowPlaying(xmlText) {
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(xmlText, 'text/xml');
+
+            const track = xml.querySelector('track')?.textContent || '';
+            const artist = xml.querySelector('artist')?.textContent || '';
+            const album = xml.querySelector('album')?.textContent || '';
+            const stationName = xml.querySelector('stationName')?.textContent || '';
+            const itemName = xml.querySelector('itemName')?.textContent || '';
+            const source = xml.querySelector('nowPlaying')?.getAttribute('source') || '';
+            const playStatus = xml.querySelector('playStatus')?.textContent || 'STOP_STATE';
+            const artUrl = xml.querySelector('art')?.textContent || '';
+
+            document.getElementById('trackName').textContent = track || stationName || itemName || 'No track';
+            document.getElementById('artistName').textContent = artist || album || '';
+            document.getElementById('sourceName').textContent = source;
+
+            currentPlayStatus = playStatus;
+            const statusDisplay = {
+                'PLAY_STATE': 'Playing',
+                'PAUSE_STATE': 'Paused',
+                'STOP_STATE': 'Stopped',
+                'BUFFERING_STATE': 'Buffering'
+            };
+            document.getElementById('playStatus').textContent = statusDisplay[playStatus] || playStatus;
+
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            if (playStatus === 'PLAY_STATE') {
+                playPauseBtn.innerHTML = '&#10074;&#10074;';
+            } else {
+                playPauseBtn.innerHTML = '&#9654;';
+            }
+
+            const albumArtDiv = document.getElementById('albumArt');
+            if (artUrl && artUrl.length > 0) {
+                albumArtDiv.innerHTML = `<img src="${artUrl}" alt="Album Art" onerror="this.parentElement.innerHTML='<span class=\\'placeholder\\'>&#9835;</span>'">`;
+            } else {
+                albumArtDiv.innerHTML = '<span class="placeholder">&#9835;</span>';
+            }
+        }
+
+        // Fetch volume
+        async function fetchVolume() {
+            const response = await fetch(`${API_BASE}/volume`);
+            const text = await response.text();
+            updateVolume(text);
+        }
+
+        // Update volume display
+        function updateVolume(xmlText) {
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(xmlText, 'text/xml');
+
+            const actualVolume = xml.querySelector('actualvolume')?.textContent || '0';
+            const muteEnabled = xml.querySelector('muteenabled')?.textContent === 'true';
+
+            document.getElementById('volumeSlider').value = actualVolume;
+            document.getElementById('volumeValue').textContent = actualVolume;
+
+            isMuted = muteEnabled;
+            const muteBtn = document.getElementById('muteBtn');
+            if (muteEnabled) {
+                muteBtn.classList.add('muted');
+                muteBtn.textContent = 'Unmute';
+            } else {
+                muteBtn.classList.remove('muted');
+                muteBtn.textContent = 'Mute';
+            }
+        }
+
+        function updateVolumeDisplay(value) {
+            document.getElementById('volumeValue').textContent = value;
+        }
+
+        // Set volume
+        async function setVolume(value) {
+            await fetch(`${API_BASE}/volume`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/xml' },
+                body: `<volume>${value}</volume>`
+            });
+        }
+
+        // Toggle mute
+        async function toggleMute() {
+            const newMuteState = !isMuted;
+            const currentVolume = document.getElementById('volumeSlider').value;
+            await fetch(`${API_BASE}/volume`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/xml' },
+                body: `<volume>${currentVolume}<muteenabled>${newMuteState}</muteenabled></volume>`
+            });
+            setTimeout(fetchVolume, 200);
+        }
+
+        // Adjust volume by step
+        async function adjustVolume(step) {
+            const currentVolume = parseInt(document.getElementById('volumeSlider').value) || 0;
+            const newVolume = Math.max(0, Math.min(100, currentVolume + step));
+            document.getElementById('volumeSlider').value = newVolume;
+            document.getElementById('volumeValue').textContent = newVolume;
+            await setVolume(newVolume);
+            setTimeout(fetchVolume, 200);
+        }
+
+        // Fetch presets
+        async function fetchPresets() {
+            const response = await fetch(`${API_BASE}/presets`);
+            const text = await response.text();
+            updatePresets(text);
+        }
+
+        // Update presets display
+        function updatePresets(xmlText) {
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(xmlText, 'text/xml');
+
+            const presets = xml.querySelectorAll('preset');
+            const presetsMap = new Map();
+
+            presets.forEach(preset => {
+                const id = preset.getAttribute('id');
+                const name = preset.querySelector('itemName')?.textContent || `Preset ${id}`;
+                presetsMap.set(id, name);
+            });
+
+            const presetsGrid = document.getElementById('presetsGrid');
+            presetsGrid.innerHTML = '';
+
+            for (let i = 1; i <= 6; i++) {
+                const presetName = presetsMap.get(String(i));
+                const btn = document.createElement('button');
+                btn.className = `preset-btn${presetName ? '' : ' empty'}`;
+                btn.innerHTML = `
+                    <div class="preset-number">${i}</div>
+                    <div class="preset-name">${presetName || 'Empty'}</div>
+                `;
+                if (presetName) {
+                    btn.onclick = () => sendKey(`PRESET_${i}`);
+                }
+                presetsGrid.appendChild(btn);
+            }
+        }
+
+        // Fetch sources
+        async function fetchSources() {
+            const response = await fetch(`${API_BASE}/sources`);
+            const text = await response.text();
+            updateSources(text);
+        }
+
+        // Update sources display
+        function updateSources(xmlText) {
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(xmlText, 'text/xml');
+
+            const sources = xml.querySelectorAll('sourceItem');
+            const sourcesList = document.getElementById('sourcesList');
+            sourcesList.innerHTML = '';
+
+            sources.forEach(sourceItem => {
+                const source = sourceItem.getAttribute('source');
+                const sourceAccount = sourceItem.getAttribute('sourceAccount') || '';
+                const status = sourceItem.getAttribute('status');
+                const displayName = sourceItem.textContent || source;
+
+                const btn = document.createElement('button');
+                btn.className = 'source-btn';
+                btn.textContent = displayName || source;
+                btn.disabled = status === 'UNAVAILABLE';
+
+                if (status !== 'UNAVAILABLE') {
+                    btn.onclick = () => selectSource(source, sourceAccount);
+                }
+
+                sourcesList.appendChild(btn);
+            });
+        }
+
+        // Select source
+        async function selectSource(source, sourceAccount) {
+            let body = `<ContentItem source="${source}"`;
+            if (sourceAccount) {
+                body += ` sourceAccount="${sourceAccount}"`;
+            }
+            body += `></ContentItem>`;
+
+            await fetch(`${API_BASE}/select`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/xml' },
+                body: body
+            });
+
+            setTimeout(fetchNowPlaying, 500);
+        }
+
+        // Send key command (press + release back-to-back as per API docs)
+        async function sendKey(key) {
+            // Send press and release back-to-back without waiting
+            fetch(`${API_BASE}/key`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/xml' },
+                body: `<key state="press" sender="Gabbo">${key}</key>`
+            }).then(() => {
+                fetch(`${API_BASE}/key`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/xml' },
+                    body: `<key state="release" sender="Gabbo">${key}</key>`
+                });
+            });
+
+            // Refresh data after key press
+            setTimeout(() => {
+                fetchNowPlaying();
+                fetchVolume();
+            }, 500);
+        }
+
+        // Zone functions
+        let currentZone = null;
+        let zoneMemberVolumes = {};
+        let lastZoneMasterVolume = 50;
+        let zoneMuted = false;
+
+        async function fetchZone() {
+            try {
+                const response = await fetch(`${API_BASE}/getZone`);
+                const text = await response.text();
+                await updateZoneDisplay(text);
+            } catch (error) {
+                console.error('Error fetching zone:', error);
+            }
+        }
+
+        async function fetchDeviceVolume(ip) {
+            try {
+                const response = await fetch(`${API_BASE}/volume?device=${ip}`);
+                const text = await response.text();
+                const parser = new DOMParser();
+                const xml = parser.parseFromString(text, 'text/xml');
+                const volume = xml.querySelector('actualvolume')?.textContent || '0';
+                const muted = xml.querySelector('muteenabled')?.textContent === 'true';
+                return { volume: parseInt(volume), muted };
+            } catch (error) {
+                console.error(`Error fetching volume for ${ip}:`, error);
+                return { volume: 0, muted: false };
+            }
+        }
+
+        async function setDeviceVolume(ip, value) {
+            await fetch(`${API_BASE}/volume?device=${ip}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/xml' },
+                body: `<volume>${value}</volume>`
+            });
+        }
+
+        async function toggleDeviceMute(ip) {
+            const current = zoneMemberVolumes[ip] || { volume: 0, muted: false };
+            const newMuteState = !current.muted;
+            await fetch(`${API_BASE}/volume?device=${ip}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/xml' },
+                body: `<volume>${current.volume}<muteenabled>${newMuteState}</muteenabled></volume>`
+            });
+            zoneMemberVolumes[ip] = { ...current, muted: newMuteState };
+            updateZoneMemberMuteButton(ip, newMuteState);
+        }
+
+        function updateZoneMemberMuteButton(ip, muted) {
+            const btn = document.querySelector(`[data-mute-ip="${ip}"]`);
+            if (btn) {
+                btn.textContent = muted ? 'Unmute' : 'Mute';
+                btn.classList.toggle('muted', muted);
+            }
+        }
+
+        function updateZoneMasterVolumeDisplay(value) {
+            const display = document.getElementById('zoneMasterVolumeValue');
+            if (display) {
+                display.textContent = value;
+            }
+        }
+
+        async function setZoneVolume(newMasterVolume) {
+            if (!currentZone || currentZone.members.length === 0) return;
+
+            newMasterVolume = parseInt(newMasterVolume);
+            const delta = newMasterVolume - lastZoneMasterVolume;
+
+            // Apply delta to all zone members
+            const promises = currentZone.members.map(async ({ ip }) => {
+                const currentVol = zoneMemberVolumes[ip]?.volume || 0;
+                const newVol = Math.max(0, Math.min(100, currentVol + delta));
+
+                // Update local state
+                zoneMemberVolumes[ip] = { ...zoneMemberVolumes[ip], volume: newVol };
+
+                // Update individual slider display
+                const ipSafe = ip.replace(/\./g, '-');
+                const slider = document.querySelector(`.zone-volume-slider[onchange*="${ip}"]`);
+                const valueDisplay = document.getElementById(`zone-vol-value-${ipSafe}`);
+                if (slider) slider.value = newVol;
+                if (valueDisplay) valueDisplay.textContent = newVol;
+
+                // Send to device
+                await setDeviceVolume(ip, newVol);
+            });
+
+            await Promise.all(promises);
+            lastZoneMasterVolume = newMasterVolume;
+        }
+
+        async function adjustZoneVolume(delta) {
+            const slider = document.getElementById('zoneMasterSlider');
+            if (!slider) return;
+
+            const newValue = Math.max(0, Math.min(100, parseInt(slider.value) + delta));
+            slider.value = newValue;
+            updateZoneMasterVolumeDisplay(newValue);
+            await setZoneVolume(newValue);
+        }
+
+        async function toggleZoneMute() {
+            if (!currentZone || currentZone.members.length === 0) return;
+
+            zoneMuted = !zoneMuted;
+
+            // Update master mute button
+            const masterMuteBtn = document.getElementById('zoneMasterMuteBtn');
+            if (masterMuteBtn) {
+                masterMuteBtn.textContent = zoneMuted ? 'Unmute All' : 'Mute All';
+                masterMuteBtn.classList.toggle('muted', zoneMuted);
+            }
+
+            // Mute/unmute all zone members
+            const promises = currentZone.members.map(async ({ ip }) => {
+                const volData = zoneMemberVolumes[ip] || { volume: 0, muted: false };
+                zoneMemberVolumes[ip] = { ...volData, muted: zoneMuted };
+
+                // Update individual mute button
+                updateZoneMemberMuteButton(ip, zoneMuted);
+
+                // Send to device
+                await fetch(`${API_BASE}/volume?device=${ip}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/xml' },
+                    body: `<volume>${volData.volume}<muteenabled>${zoneMuted}</muteenabled></volume>`
+                });
+            });
+
+            await Promise.all(promises);
+        }
+
+        function updateZoneMemberVolumeDisplay(ip, value) {
+            const display = document.getElementById(`zone-vol-value-${ip.replace(/\./g, '-')}`);
+            if (display) {
+                display.textContent = value;
+            }
+            if (zoneMemberVolumes[ip]) {
+                zoneMemberVolumes[ip].volume = parseInt(value);
+            }
+        }
+
+        async function updateZoneDisplay(xmlText) {
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(xmlText, 'text/xml');
+
+            const zone = xml.querySelector('zone');
+            const zoneInfo = document.getElementById('zoneInfo');
+            const createBtn = document.getElementById('createZoneBtn');
+            const leaveBtn = document.getElementById('leaveZoneBtn');
+
+            if (!zone || !zone.getAttribute('master') || zone.getAttribute('master') === '') {
+                // No active zone
+                currentZone = null;
+                zoneMemberVolumes = {};
+                zoneInfo.innerHTML = '<div class="zone-empty">No active zone. Create a zone to play music on multiple speakers.</div>';
+                createBtn.style.display = 'block';
+                createBtn.textContent = 'Create Zone';
+                leaveBtn.style.display = 'none';
+                return;
+            }
+
+            const masterMac = zone.getAttribute('master');
+            const members = zone.querySelectorAll('member');
+
+            currentZone = {
+                master: masterMac,
+                members: []
+            };
+
+            // Fetch volumes for all members
+            const memberList = [];
+            members.forEach(member => {
+                const ip = member.getAttribute('ipaddress');
+                const mac = member.textContent.replace(/"/g, '');
+                currentZone.members.push({ ip, mac });
+                memberList.push({ ip, mac });
+            });
+
+            // Fetch all volumes in parallel
+            await Promise.all(memberList.map(async ({ ip }) => {
+                zoneMemberVolumes[ip] = await fetchDeviceVolume(ip);
+            }));
+
+            let membersHtml = '';
+            memberList.forEach(({ ip, mac }) => {
+                const device = discoveredDevices[ip];
+                const deviceName = device ? device.name : ip;
+                const isMaster = mac === masterMac;
+                const volData = zoneMemberVolumes[ip] || { volume: 0, muted: false };
+                const ipSafe = ip.replace(/\./g, '-');
+
+                membersHtml += `
+                    <div class="zone-member">
+                        <div class="zone-member-header">
+                            <span class="zone-member-name">
+                                ${deviceName}
+                                <span class="zone-member-badge ${isMaster ? '' : 'slave'}">${isMaster ? 'Master' : 'Slave'}</span>
+                            </span>
+                            ${!isMaster ? `<button class="zone-member-remove" onclick="removeFromZone('${ip}', '${mac}')" title="Remove from zone">&times;</button>` : ''}
+                        </div>
+                        <div class="zone-member-volume">
+                            <span class="zone-member-volume-label">Vol</span>
+                            <input type="range" class="zone-volume-slider"
+                                min="0" max="100" value="${volData.volume}"
+                                oninput="updateZoneMemberVolumeDisplay('${ip}', this.value)"
+                                onchange="setDeviceVolume('${ip}', this.value)">
+                            <span class="zone-member-volume-value" id="zone-vol-value-${ipSafe}">${volData.volume}</span>
+                            <button class="zone-member-mute-btn ${volData.muted ? 'muted' : ''}"
+                                data-mute-ip="${ip}"
+                                onclick="toggleDeviceMute('${ip}')">${volData.muted ? 'Unmute' : 'Mute'}</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Calculate average volume for master control
+            const avgVolume = Math.round(
+                memberList.reduce((sum, { ip }) => sum + (zoneMemberVolumes[ip]?.volume || 0), 0) / memberList.length
+            );
+
+            // Check if all members are muted
+            zoneMuted = memberList.every(({ ip }) => zoneMemberVolumes[ip]?.muted);
+
+            zoneInfo.innerHTML = `
+                <div class="zone-master-volume">
+                    <div class="zone-master-volume-header">
+                        <span class="zone-master-volume-label">Zone Volume (All Speakers)</span>
+                        <span class="zone-master-volume-value" id="zoneMasterVolumeValue">${avgVolume}</span>
+                    </div>
+                    <div class="zone-master-volume-controls">
+                        <button class="zone-master-btn" onclick="adjustZoneVolume(-5)">−</button>
+                        <input type="range" class="zone-master-slider" id="zoneMasterSlider"
+                            min="0" max="100" value="${avgVolume}"
+                            oninput="updateZoneMasterVolumeDisplay(this.value)"
+                            onchange="setZoneVolume(this.value)">
+                        <button class="zone-master-btn" onclick="adjustZoneVolume(5)">+</button>
+                        <button class="zone-master-mute-btn ${zoneMuted ? 'muted' : ''}" id="zoneMasterMuteBtn" onclick="toggleZoneMute()">${zoneMuted ? 'Unmute All' : 'Mute All'}</button>
+                    </div>
+                </div>
+                <div class="zone-members">${membersHtml}</div>
+            `;
+
+            // Store the last master volume for delta calculations
+            lastZoneMasterVolume = avgVolume;
+
+            // Update buttons
+            createBtn.textContent = 'Add to Zone';
+            createBtn.style.display = 'block';
+            leaveBtn.style.display = 'block';
+        }
+
+        function showZoneModal() {
+            const modal = document.getElementById('zoneModal');
+            const deviceList = document.getElementById('zoneDeviceList');
+
+            // Get current device info
+            const currentDevice = discoveredDevices[selectedDeviceIp];
+            const currentDeviceId = currentDevice ? currentDevice.deviceId : '';
+
+            // Build device list
+            let html = '';
+            for (const [ip, device] of Object.entries(discoveredDevices)) {
+                const isCurrent = ip === selectedDeviceIp;
+                const isInZone = currentZone && currentZone.members.some(m => m.ip === ip);
+
+                html += `
+                    <label class="zone-device-item ${isCurrent ? 'master' : ''} ${isInZone ? 'selected' : ''}">
+                        <input type="checkbox"
+                            value="${ip}"
+                            data-mac="${device.deviceId}"
+                            ${isCurrent ? 'checked disabled' : ''}
+                            ${isInZone ? 'checked' : ''}>
+                        <div class="zone-device-item-info">
+                            <div class="zone-device-item-name">${device.name}</div>
+                            <div class="zone-device-item-type">${device.type} - ${ip}</div>
+                            ${isCurrent ? '<div class="zone-device-item-master">Master (current device)</div>' : ''}
+                        </div>
+                    </label>
+                `;
+            }
+
+            deviceList.innerHTML = html;
+            modal.style.display = 'flex';
+        }
+
+        function hideZoneModal() {
+            document.getElementById('zoneModal').style.display = 'none';
+        }
+
+        async function createZone() {
+            const checkboxes = document.querySelectorAll('#zoneDeviceList input[type="checkbox"]:checked:not(:disabled)');
+            const currentDevice = discoveredDevices[selectedDeviceIp];
+
+            if (checkboxes.length === 0) {
+                alert('Please select at least one device to add to the zone.');
+                return;
+            }
+
+            // Build zone XML
+            const masterMac = currentDevice.deviceId;
+            let membersXml = `<member ipaddress="${selectedDeviceIp}">${masterMac}</member>`;
+
+            checkboxes.forEach(cb => {
+                const ip = cb.value;
+                const mac = cb.dataset.mac;
+                membersXml += `<member ipaddress="${ip}">${mac}</member>`;
+            });
+
+            const zoneXml = `<zone master="${masterMac}" senderIPAddress="${selectedDeviceIp}">${membersXml}</zone>`;
+
+            try {
+                if (currentZone) {
+                    // Add to existing zone
+                    let addXml = `<zone master="${masterMac}">`;
+                    checkboxes.forEach(cb => {
+                        const ip = cb.value;
+                        const mac = cb.dataset.mac;
+                        addXml += `<member ipaddress="${ip}">${mac}</member>`;
+                    });
+                    addXml += '</zone>';
+
+                    await fetch(`${API_BASE}/addZoneSlave`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/xml' },
+                        body: addXml
+                    });
+                } else {
+                    // Create new zone
+                    await fetch(`${API_BASE}/setZone`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/xml' },
+                        body: zoneXml
+                    });
+                }
+
+                hideZoneModal();
+                setTimeout(fetchZone, 500);
+            } catch (error) {
+                console.error('Error creating zone:', error);
+                alert('Failed to create zone: ' + error.message);
+            }
+        }
+
+        async function removeFromZone(ip, mac) {
+            if (!currentZone) return;
+
+            const removeXml = `<zone master="${currentZone.master}"><member ipaddress="${ip}">${mac}</member></zone>`;
+
+            try {
+                await fetch(`${API_BASE}/removeZoneSlave`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/xml' },
+                    body: removeXml
+                });
+                setTimeout(fetchZone, 500);
+            } catch (error) {
+                console.error('Error removing from zone:', error);
+            }
+        }
+
+        async function leaveZone() {
+            if (!currentZone) return;
+
+            // Remove all slaves to dissolve the zone
+            for (const member of currentZone.members) {
+                if (member.mac !== currentZone.master) {
+                    await removeFromZone(member.ip, member.mac);
+                }
+            }
+            setTimeout(fetchZone, 500);
+        }
+
+        // UI Helpers
+        function updateStatus(text, connected) {
+            document.getElementById('statusText').textContent = text;
+            const dot = document.getElementById('statusDot');
+            if (connected) {
+                dot.classList.add('connected');
+            } else {
+                dot.classList.remove('connected');
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+
+        function hideError() {
+            document.getElementById('errorMessage').classList.add('hidden');
+        }
+
+        function showDeviceCards() {
+            document.querySelectorAll('.device-info').forEach(card => {
+                card.classList.add('visible');
+            });
+        }
+
+        function hideDeviceCards() {
+            document.querySelectorAll('.device-info').forEach(card => {
+                card.classList.remove('visible');
+            });
+        }
+    </script>
+</body>
+</html>
