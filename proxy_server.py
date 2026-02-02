@@ -295,8 +295,9 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
 
     def log_message(self, format, *args):
         # Only log non-polling requests
-        if '/api/now_playing' not in args[0] and '/api/volume' not in args[0]:
-            print(f"[{self.log_date_time_string()}] {args[0]}")
+        msg = format % args
+        if '/api/now_playing' not in msg and '/api/volume' not in msg:
+            print(f"[{self.log_date_time_string()}] {msg}")
 
 
 # Change to the directory containing the HTML file
