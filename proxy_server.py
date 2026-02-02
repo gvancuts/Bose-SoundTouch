@@ -18,10 +18,16 @@ import threading
 import time
 import re
 
-# Default device IP (can be changed via discovery)
-current_device_ip = sys.argv[1] if len(sys.argv) > 1 else None
+# Parse command-line arguments
+import argparse
+parser = argparse.ArgumentParser(description='Proxy server for Bose SoundTouch controller.')
+parser.add_argument('device_ip', nargs='?', default=None, help='IP address of the SoundTouch device')
+parser.add_argument('-p', '--port', type=int, default=8000, help='Port to run the server on (default: 8000)')
+args = parser.parse_args()
+
+current_device_ip = args.device_ip
 SOUNDTOUCH_PORT = 8090
-PORT = 8000
+PORT = args.port
 
 # Store discovered devices
 discovered_devices = {}
