@@ -15,12 +15,19 @@ Start the server:
 python3 proxy_server.py
 ```
 
-Or specify a device IP and/or a custom port:
+Or specify one or more device IPs and/or a custom port:
 
 ```bash
 python3 proxy_server.py 192.168.1.100
+python3 proxy_server.py 192.168.1.100 192.168.1.101
 python3 proxy_server.py -p 9000
-python3 proxy_server.py 192.168.1.100 -p 9000
+python3 proxy_server.py 192.168.1.100 192.168.1.101 -p 9000
+```
+
+Multiple IPs can also be passed via the `SOUNDTOUCH_DEVICE_IP` environment variable (comma-separated):
+
+```bash
+SOUNDTOUCH_DEVICE_IP=192.168.1.100,192.168.1.101 python3 proxy_server.py
 ```
 
 Then open http://localhost:8000/soundtouch-controller-proxy.html in your browser (adjust the port if you changed it).
@@ -33,10 +40,11 @@ Build the image:
 docker build -t soundtouch .
 ```
 
-If you know the device IP, standard port mapping is all you need:
+If you know the device IP(s), standard port mapping is all you need:
 
 ```bash
 docker run -p 8000:8000 -e SOUNDTOUCH_DEVICE_IP=192.168.1.50 soundtouch
+docker run -p 8000:8000 -e SOUNDTOUCH_DEVICE_IP=192.168.1.50,192.168.1.60 soundtouch
 ```
 
 To use auto-discovery (SSDP/network scan), `--net=host` is required because multicast traffic does not traverse Docker's default bridge network:

@@ -21,13 +21,20 @@ import re
 # Parse command-line arguments
 import argparse
 parser = argparse.ArgumentParser(description='Proxy server for Bose SoundTouch controller.')
-parser.add_argument('device_ip', nargs='?', default=os.environ.get('SOUNDTOUCH_DEVICE_IP') or None,
-                    help='IP address of the SoundTouch device (env: SOUNDTOUCH_DEVICE_IP)')
+parser.add_argument('device_ips', nargs='*',
+                    help='IP address(es) of SoundTouch device(s) (env: SOUNDTOUCH_DEVICE_IP, comma-separated)')
 parser.add_argument('-p', '--port', type=int, default=int(os.environ.get('SOUNDTOUCH_PORT', 8000)),
                     help='Port to run the server on (default: 8000, env: SOUNDTOUCH_PORT)')
 args = parser.parse_args()
 
-current_device_ip = args.device_ip
+# Resolve device IPs: CLI args take precedence, then env var (comma-separated)
+device_ips = args.device_ips
+if not device_ips:
+    env_val = os.environ.get('SOUNDTOUCH_DEVICE_IP', '')
+    if env_val:
+        device_ips = [ip.strip() for ip in env_val.split(',') if ip.strip()]
+
+current_device_ip = device_ips[0] if device_ips else None
 SOUNDTOUCH_PORT = 8090
 PORT = args.port
 
@@ -95,7 +102,7 @@ def discover_soundtouch_devices(timeout=3):
         devices = scan_network_for_soundtouch()
 
     with discovery_lock:
-        discovered_devices = devices
+        discovered_devices.update(devices)
 
     return devices
 
@@ -196,6 +203,15 @@ def get_device_info(ip):
         pass
 
     return None
+
+
+# Pre-populate discovered_devices with any provided IPs
+for _ip in device_ips:
+    info = get_device_info(_ip)
+    if info:
+        discovered_devices[_ip] = info
+    else:
+        discovered_devices[_ip] = {'name': _ip, 'type': 'Unknown', 'deviceId': 'Unknown', 'ip': _ip}
 
 
 class ProxyHandler(http.server.SimpleHTTPRequestHandler):
@@ -312,8 +328,9 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 print(f"Starting SoundTouch proxy server on http://localhost:{PORT}")
-if current_device_ip:
-    print(f"Initial device: {current_device_ip}")
+if device_ips:
+    print(f"Pre-configured device(s): {', '.join(device_ips)}")
+    print(f"Active device: {current_device_ip}")
 else:
     print("No device specified. Use discovery to find devices.")
 print(f"Open http://localhost:{PORT}/soundtouch-controller-proxy.html in your browser")
