@@ -25,6 +25,28 @@ python3 proxy_server.py 192.168.1.100 -p 9000
 
 Then open http://localhost:8000/soundtouch-controller-proxy.html in your browser (adjust the port if you changed it).
 
+## Docker
+
+Build the image:
+
+```bash
+docker build -t soundtouch .
+```
+
+Run with default settings (port 8000, auto-discovery):
+
+```bash
+docker run --net=host soundtouch
+```
+
+Run with a custom port and device IP:
+
+```bash
+docker run --net=host -e SOUNDTOUCH_PORT=9000 -e SOUNDTOUCH_DEVICE_IP=192.168.1.50 soundtouch
+```
+
+`--net=host` is required so the container can reach SoundTouch devices on your LAN and perform SSDP discovery.
+
 ## Features
 
 - **Auto-discovery** -- finds SoundTouch devices on your network via SSDP (falls back to subnet scan)

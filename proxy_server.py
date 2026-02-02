@@ -21,8 +21,10 @@ import re
 # Parse command-line arguments
 import argparse
 parser = argparse.ArgumentParser(description='Proxy server for Bose SoundTouch controller.')
-parser.add_argument('device_ip', nargs='?', default=None, help='IP address of the SoundTouch device')
-parser.add_argument('-p', '--port', type=int, default=8000, help='Port to run the server on (default: 8000)')
+parser.add_argument('device_ip', nargs='?', default=os.environ.get('SOUNDTOUCH_DEVICE_IP') or None,
+                    help='IP address of the SoundTouch device (env: SOUNDTOUCH_DEVICE_IP)')
+parser.add_argument('-p', '--port', type=int, default=int(os.environ.get('SOUNDTOUCH_PORT', 8000)),
+                    help='Port to run the server on (default: 8000, env: SOUNDTOUCH_PORT)')
 args = parser.parse_args()
 
 current_device_ip = args.device_ip
