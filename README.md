@@ -33,19 +33,23 @@ Build the image:
 docker build -t soundtouch .
 ```
 
-Run with default settings (port 8000, auto-discovery):
+If you know the device IP, standard port mapping is all you need:
+
+```bash
+docker run -p 8000:8000 -e SOUNDTOUCH_DEVICE_IP=192.168.1.50 soundtouch
+```
+
+To use auto-discovery (SSDP/network scan), `--net=host` is required because multicast traffic does not traverse Docker's default bridge network:
 
 ```bash
 docker run --net=host soundtouch
 ```
 
-Run with a custom port and device IP:
+Both `SOUNDTOUCH_PORT` and `SOUNDTOUCH_DEVICE_IP` can be set via environment variables:
 
 ```bash
 docker run --net=host -e SOUNDTOUCH_PORT=9000 -e SOUNDTOUCH_DEVICE_IP=192.168.1.50 soundtouch
 ```
-
-`--net=host` is required so the container can reach SoundTouch devices on your LAN and perform SSDP discovery.
 
 ## Features
 
